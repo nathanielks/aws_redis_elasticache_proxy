@@ -3,6 +3,7 @@ package main
 import (
 	"./resp"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -10,13 +11,14 @@ import (
 	"net"
 	"os"
 	"strings"
-	"crypto/tls"
 )
 
 const (
-	NoAuth   string = "-NOAUTH Authentication required."
-	BadAuth  string = "-ERR invalid password"
-	NoServer string = "-ERR Server unavailable"
+	Ping       string = "-PING Empty request."
+	NoAuth     string = "-NOAUTH Authentication required."
+	BadRequest string = "-ERR there was an error processing the request"
+	BadAuth    string = "-ERR invalid password"
+	NoServer   string = "-ERR Server unavailable"
 )
 
 func abort(conn net.Conn, msg string) {
@@ -29,18 +31,35 @@ func auth(conn net.Conn, secret string) {
 	rd := resp.NewReader(conn)
 	v, _, err := rd.ReadValue()
 
-	if err == io.EOF || err != nil || v.Type() != resp.Array {
+	if err == io.EOF {
+		abort(conn, Ping)
+		return
+	}
+
+	if err != nil {
+		log.Print("err != nil")
+		log.Printf("err: %s", err)
+		abort(conn, BadRequest)
+		return
+	}
+
+	if v.Type() != resp.Array {
+		log.Print("v.Type() != resp.Array ")
+		log.Printf("v.Type(): %s", v.Type())
+		log.Printf("v: %s", v)
 		abort(conn, NoAuth)
 		return
 	}
 
 	cmdParts := v.Array()
 	if len(cmdParts) != 2 {
+		log.Print("cmdParts != 2")
 		abort(conn, NoAuth)
 		return
 	}
 
 	if strings.ToUpper(cmdParts[0].String()) != "AUTH" {
+		log.Print("cmdParts[0] != AUTH")
 		abort(conn, NoAuth)
 		return
 	}
