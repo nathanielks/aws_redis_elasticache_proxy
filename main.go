@@ -54,7 +54,6 @@ func auth(conn net.Conn, secret string) {
 	cmdParts := v.Array()
 	if len(cmdParts) != 2 {
 		log.Print("cmdParts != 2")
-		log.Printf("cmdParts: %s", cmdParts)
 		abort(conn, NoAuth)
 		return
 	}
