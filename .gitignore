@@ -1,0 +1,4 @@
+redis_auth_proxy
+*.crt
+*.key
+*.pem
